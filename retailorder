@@ -1,0 +1,61 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load Data
+def load_data(file_path):
+    df = pd.read_csv(file_path)
+    return df
+
+# Data Cleaning
+def clean_data(df):
+    df.dropna(inplace=True)  # Remove missing values
+    df['Order Date'] = pd.to_datetime(df['Order Date'])  # Convert to datetime
+    df['Sales'] = df['Sales'].astype(float)
+    return df
+
+# Sales Trend Analysis
+def sales_trend(df):
+    df['Month'] = df['Order Date'].dt.to_period('M')
+    sales_per_month = df.groupby('Month')['Sales'].sum()
+    
+    plt.figure(figsize=(10,5))
+    plt.plot(sales_per_month.index.astype(str), sales_per_month.values, marker='o')
+    plt.title('Monthly Sales Trend')
+    plt.xlabel('Month')
+    plt.ylabel('Total Sales')
+    plt.xticks(rotation=45)
+    plt.grid()
+    plt.show()
+
+# Top Products by Sales
+def top_products(df, top_n=10):
+    product_sales = df.groupby('Product Name')['Sales'].sum().sort_values(ascending=False).head(top_n)
+    
+    plt.figure(figsize=(10,5))
+    product_sales.plot(kind='bar', color='skyblue')
+    plt.title(f'Top {top_n} Best Selling Products')
+    plt.xlabel('Product Name')
+    plt.ylabel('Total Sales')
+    plt.xticks(rotation=75)
+    plt.show()
+
+# Customer Spending Analysis
+def customer_spending(df, top_n=10):
+    customer_sales = df.groupby('Customer Name')['Sales'].sum().sort_values(ascending=False).head(top_n)
+    
+    plt.figure(figsize=(10,5))
+    customer_sales.plot(kind='bar', color='lightcoral')
+    plt.title(f'Top {top_n} Customers by Spending')
+    plt.xlabel('Customer Name')
+    plt.ylabel('Total Spending')
+    plt.xticks(rotation=75)
+    plt.show()
+
+if __name__ == "__main__":
+    file_path = 'retail_orders.csv'  # Update this with your actual file path
+    df = load_data(file_path)
+    df = clean_data(df)
+    
+    sales_trend(df)
+    top_products(df)
+    customer_spending(df)
