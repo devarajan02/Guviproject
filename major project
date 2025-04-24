@@ -1,0 +1,101 @@
+# ==============================
+# 1. Import Libraries
+# ==============================
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, IsolationForest
+from sklearn.metrics import classification_report, mean_squared_error, silhouette_score, accuracy_score, precision_score, recall_score, f1_score
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+warnings.filterwarnings('ignore')
+
+# ==============================
+# 2. Load Dataset (Assume CSV)
+# ==============================
+df = pd.read_csv('insurance_data.csv')  # Replace with actual path
+
+# ==============================
+# 3. Preprocessing
+# ==============================
+# Encode categorical features
+le = LabelEncoder()
+for col in df.select_dtypes(include='object').columns:
+    df[col] = le.fit_transform(df[col])
+
+# Fill missing values (if any)
+df.fillna(df.median(), inplace=True)
+
+# ==============================
+# 4. Risk Classification (Supervised)
+# ==============================
+X_cls = df.drop('risk_level', axis=1)
+y_cls = df['risk_level']
+X_train_cls, X_test_cls, y_train_cls, y_test_cls = train_test_split(X_cls, y_cls, test_size=0.2, random_state=42, stratify=y_cls)
+
+clf = RandomForestClassifier()
+clf.fit(X_train_cls, y_train_cls)
+y_pred_cls = clf.predict(X_test_cls)
+print("\nRisk Classification Report:\n", classification_report(y_test_cls, y_pred_cls))
+
+# ==============================
+# 5. Claim Amount Prediction (Regression)
+# ==============================
+X_reg = df.drop('claim_amount', axis=1)
+y_reg = df['claim_amount']
+X_train_reg, X_test_reg, y_train_reg, y_test_reg = train_test_split(X_reg, y_reg, test_size=0.2, random_state=42)
+
+reg = RandomForestRegressor()
+reg.fit(X_train_reg, y_train_reg)
+y_pred_reg = reg.predict(X_test_reg)
+print("\nRMSE (Claim Prediction):", np.sqrt(mean_squared_error(y_test_reg, y_pred_reg)))
+
+# ==============================
+# 6. Customer Segmentation (Clustering)
+# ==============================
+X_cluster = StandardScaler().fit_transform(df)
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X_cluster)
+
+kmeans = KMeans(n_clusters=3, random_state=42)
+clusters = kmeans.fit_predict(X_pca)
+print("\nSilhouette Score (Clustering):", silhouette_score(X_pca, clusters))
+
+# ==============================
+# 7. Visualize Clusters
+# ==============================
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x=X_pca[:, 0], y=X_pca[:, 1], hue=clusters, palette='viridis')
+plt.title('Customer Segmentation (PCA + KMeans)')
+plt.xlabel('PCA 1')
+plt.ylabel('PCA 2')
+plt.legend()
+plt.show()
+
+# ==============================
+# 8. Fraud Detection (Anomaly Detection)
+# ==============================
+if 'is_fraud' in df.columns:
+    X_fraud = df.drop('is_fraud', axis=1)
+    y_fraud = df['is_fraud']
+    
+    iso = IsolationForest(contamination=0.05, random_state=42)
+    preds = iso.fit_predict(X_fraud)
+
+    preds = np.where(preds == -1, 1, 0)  # Convert to binary (1 = fraud)
+
+    print("\nFraud Detection Metrics:")
+    print("Accuracy:", accuracy_score(y_fraud, preds))
+    print("Precision:", precision_score(y_fraud, preds))
+    print("Recall:", recall_score(y_fraud, preds))
+    print("F1 Score:", f1_score(y_fraud, preds))
+else:
+    print("\nFraud detection skipped (no 'is_fraud' column in dataset).")
+
+# ==============================
+# NLP, Translation, and Chatbot Modules will be developed in the next stage.
+# ==============================
